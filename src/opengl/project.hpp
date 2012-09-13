@@ -8,9 +8,11 @@
 
 #ifndef _462_OPENGL_PROJECT_HPP_
 #define _462_OPENGL_PROJECT_HPP_
-//383 is a reasonably sized prime
-// for our hash function
-#define GOOD_PRIME 383
+
+//Number of points in our heightmap
+// note this is just in one direction
+#define WATER_ARRAY_SIZE_X 100
+#define WATER_ARRAY_SIZE_Y 100
 
 
 #include "math/camera.hpp"
@@ -128,6 +130,7 @@ public:
     void render( const Camera* camera );
 
 	void myDraw();
+	void myWaterDraw();
 
 	void updateNormalList( Vector3 vertex, NormalList* hash, Vector3 normal);
 
@@ -138,7 +141,8 @@ private:
     // a copy of the scene data, as passed in by initialize
     Scene scene;
 	int list;
-	NormalList nList[GOOD_PRIME];
+	Vector3* normalList;
+	float* zWater;
 
     // TODO add any other private members/functions here.
 

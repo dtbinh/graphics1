@@ -11,7 +11,8 @@
 // use this header to include the OpenGL headers
 // DO NOT include gl.h or glu.h directly; it will not compile correctly.
 #include "application/opengl.hpp"
-
+#include <stdio.h>
+#include <string.h>
 
 // A namespace declaration. All proejct files use this namespace.
 // Add this declration (and its closing) to all source/headers you create.
@@ -26,8 +27,9 @@ OpenglProject::OpenglProject()
     // TODO any basic construction or initialization of members
     // Warning: Although members' constructors are automatically called,
     // ints, floats, pointers, and classes with empty contructors all
-    // will have uninitialized data!
+    // will have uninitialized data!	
 	
+
 }
 
 // destructor, invoked when object is destroyed
@@ -48,36 +50,27 @@ OpenglProject::~OpenglProject()
 bool OpenglProject::initialize( Camera* camera, Scene* scene )
 {
 
-	//glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-/*
-int i;
-Vector3 myVector;
-for(i=0;i<12;i+=3){
-	myVector = this->scene.mesh.vertices[i];
-glVertex3f( myVector.x, myVector.y, myVector.z ); 
-myVector = this->scene.mesh.vertices[i+1];
-glVertex3f( myVector.x, myVector.y, myVector.z ); 
-myVector = this->scene.mesh.vertices[i+2];
-glVertex3f( myVector.x, myVector.y, myVector.z ); 
-}
-*/
+	int numTri;
     // copy scene
-    this->scene = *scene;
+	this->scene = *scene;
+	
+	int numVertex = this->scene.mesh.num_vertices;
+	normalList = (Vector3*) malloc(sizeof(Vector3) * numVertex);
+	memset(normalList, 0, sizeof(Vector3) * numVertex);
 
-	glEnable(GL_LIGHTING);
-    GLfloat lightpos[] = { 0.0, 0.0, 15.0 };
-    GLfloat lightcolor[] = { 1.0, 1.0, 0.0 };
-    GLfloat ambcolor[] = { 0.0, 0.0, 1.0 };
+GLfloat mat_specular[] = { 0.5, 0.5, 1.0, 0.5 };
+   GLfloat mat_shininess[] = { 20.0 };
+   GLfloat light_position[] = { 10.0, 7.0, 15.0, 0.0 };
+   glClearColor (0.0, 0.0, 0.0, 0.0);
+   glShadeModel (GL_SMOOTH);
 
-    glEnable(GL_LIGHTING);                               // enable lighting
-    glLightModelfv(GL_LIGHT_MODEL_AMBIENT,ambcolor);     // ambient light
+   glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
+   glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
+   glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
-    glEnable(GL_LIGHT0);                                 // enable light source
-    glLightfv(GL_LIGHT0,GL_POSITION,lightpos);           // config light source
-    glLightfv(GL_LIGHT0,GL_AMBIENT,lightcolor);
-    glLightfv(GL_LIGHT0,GL_DIFFUSE,lightcolor);
-    glLightfv(GL_LIGHT0,GL_SPECULAR,lightcolor);
-
+   glEnable(GL_LIGHTING);
+   glEnable(GL_LIGHT0);
+   glEnable(GL_DEPTH_TEST);
 
 
 	//glOrtho(-1.0,1.0,-1.0,1.0,-5.0,5.0);
@@ -89,27 +82,30 @@ glVertex3f( myVector.x, myVector.y, myVector.z );
 	std::cout << "Direction: (" << camDir.x << "," << camDir.y << "," << camDir.z << ")\n";
 	std::cout << "Up: (" << camUp.x << "," << camUp.y << "," << camUp.z << ")\n";
 
-	Vector3 newPos;
+	Vector3 newPos, temp;
 	newPos.x = 3;
 	newPos.y = 0;
 	newPos.z = 0;
 
-//	this->nList = (NormalList*)malloc(sizeof(NormalList) * GOOD_PRIME);
-
-	//doing normal calculations
-	ZeroMemory( &nList, sizeof( nList ) );
+	int indA, indB, indC;
 	Vector3 vertA, vertB, vertC, vectorU, vectorV, normal;
 	int i;
-	double x, y, z;
-	long hashA, hashB, hashC;
+
 	
 //for each triangle get surface normal
-//index into hashmap by vertex and reaverage normal
-for(i=0;i<936;i+=3){
-	//get vertices
-	vertA = this->scene.mesh.vertices[i]; 
-	vertB = this->scene.mesh.vertices[i+1];
-	vertC = this->scene.mesh.vertices[i+2];
+//index into list by vertex and reaverage normal
+numTri = this->scene.mesh.num_triangles;
+
+	for(i=0;i<numTri;i++){
+		//get vertex index
+		indA = this->scene.mesh.triangles[i].vertices[0]; 
+		indB = this->scene.mesh.triangles[i].vertices[1]; 
+		indC = this->scene.mesh.triangles[i].vertices[2]; 
+
+		//get vertex
+		vertA = this->scene.mesh.vertices[indA];
+		vertB = this->scene.mesh.vertices[indB];
+		vertC = this->scene.mesh.vertices[indC];
 
 	//compute vectors
 	vectorU = vertB - vertA;
@@ -120,44 +116,33 @@ for(i=0;i<936;i+=3){
 	normal.y = vectorU.z*vectorV.x - vectorU.x*vectorV.z;
 	normal.z = vectorU.x*vectorV.y - vectorU.y*vectorV.x;
 
-	//calculate hashes per vertex
-	x = ceil(abs(vertA.x));
-	y = ceil(abs(vertA.y));
-	z = ceil(abs(vertA.z));
-	hashA = ((int)(pow(x , y) * pow(y , z)))% GOOD_PRIME;
-/*	x = abs(vertB.x);
-	y = abs(vertB.y);
-	z = abs(vertB.z);
-	hashB = ((long)(ceil(pow(x , y) * pow(y , z))))% GOOD_PRIME;
-	x = abs(vertC.x);
-	y = abs(vertC.y);
-	z = abs(vertC.z);
-	hashC = ((long)(ceil(pow(x , y) * pow(y , z))))% GOOD_PRIME;
-*/
-	//update normal value
-	NormalList* temp =  &(this->nList[hashA]);
-	updateNormalList(vertA, temp, normal);
-//	updateNormalList(vertB, hashB, normal);
-//	updateNormalList(vertC, hashC, normal);
+	//set vertex a
+	temp = normalList[indA];
+	temp += normalize(normal);
+	normalList[indA] = normalize(temp);	
 
+	//set vertex b
+	temp = normalList[indB];
+	temp += normalize(normal);
+	normalList[indB] = normalize(temp);
 
-	/*
-	glVertex3f( vertA.x, vertA.y, vertA.z );
-	glVertex3f( vertB.x, vertB.y, vertB.z );
-	glVertex3f( vertC.x, vertC.y, vertC.z ); 
-	*/
-
-//	std::cout << "VECTOR: (" << myVector.x << "," << myVector.y << "," << myVector.z << ")\n";
+	//set vertex c
+	temp = normalList[indC];
+	temp += normalize(normal);
+	normalList[indC] = normalize(temp);
 }
 
-	//(*camera).position = newPos;
+	zWater = (float*) malloc (sizeof(float) * WATER_ARRAY_SIZE_X * WATER_ARRAY_SIZE_Y);
+	int index = 0;
+	for(int y = 0; y < WATER_ARRAY_SIZE_Y; y++){
+		for(int x = 0; x < WATER_ARRAY_SIZE_X; x++){
+			zWater[index++] = this->scene.heightmap->compute_height(Vector2(-1.0 + (2.0/WATER_ARRAY_SIZE_X)*x, -1.0 + (2.0/WATER_ARRAY_SIZE_Y)*y));
+		}
+	}
 
-
-
-    // TODO opengl initialization code and precomputation of mesh/heightmap
     return true;
 }
-
+/*
 void OpenglProject::updateNormalList(Vector3 vertex, NormalList* nl, Vector3 normal){
 	if(nl->accessed == 0){
 		//empty bin, new vertex by default
@@ -185,7 +170,7 @@ void OpenglProject::updateNormalList(Vector3 vertex, NormalList* nl, Vector3 nor
 				//no next, make new vertex and add next pointer
 				std::cout << "NEW VERTEX (in bin)(" << vertex.x << "," << vertex.y << "," << vertex.z << ")\n"; 
 				NormalList* nextVert = (NormalList*) malloc(sizeof(NormalList));
-				ZeroMemory( nextVert, sizeof( NormalList ) );
+				memset( nextVert, 0, sizeof( NormalList ) );
 					nextVert->vertex = vertex;
 					nextVert->accessed++;
 					nextVert->average = normal;
@@ -196,14 +181,14 @@ void OpenglProject::updateNormalList(Vector3 vertex, NormalList* nl, Vector3 nor
 	}
 	
 }
-
+*/
 /**
  * Clean up the project. Free any memory, etc.
  */
 void OpenglProject::destroy()
 {
     // TODO any cleanup code, e.g., freeing memory
-	free(this->nList);
+//	free(this->nList);
 }
 
 /**
@@ -219,7 +204,7 @@ void OpenglProject::update( real_t dt )
 
     // TODO any update code, e.g. commputing heightmap mesh positions and normals
 }
-
+/*
 Vector3 OpenglProject::getNormal(Vector3 vertex){
 	
 	int x,y,z, hash;
@@ -243,32 +228,67 @@ Vector3 OpenglProject::getNormal(Vector3 vertex){
 			}
 		}
 		std::cout << "UH OH COULDN'T FIND NORMAL!\n";
-		return 0;
+		return vertex;
 	}
+}
+*/
+
+void OpenglProject::myWaterDraw(){
+
+	glBegin(GL_LINE_STRIP);
+	int index = 0;
+	for(int y = 0; y < WATER_ARRAY_SIZE_Y; y++){
+		for(int x = 0; x < WATER_ARRAY_SIZE_X; x++){
+			glVertex3f(-1.0 + (2.0/WATER_ARRAY_SIZE_X)*x, zWater[index++], -1.0 + (2.0/WATER_ARRAY_SIZE_Y)*y);
+		}
+	}
+
+	glEnd();
+	glFlush();
+
 }
 
 void OpenglProject::myDraw(){
+	int cinCrap;
 	Vector3 normal, vertA, vertB, vertC;
-	int i, hash;
+	int i, hash, indA, indB, indC;
 	NormalList temp;
 
-	glBegin( GL_LINE_STRIP); 
+	glBegin( GL_TRIANGLES); 
 glColor3f( 0.0f, 0.0f, 1.0f ); // sets color to blue 
-ZeroMemory( &nList, sizeof( nList ) );
-for(i=0;i<936;i+=3){
-	//get vertices
-	vertA = this->scene.mesh.vertices[i]; 
-	vertB = this->scene.mesh.vertices[i+1];
-	vertC = this->scene.mesh.vertices[i+2];
+//memset( &nList, 0, sizeof( nList ) );
+int numTri = this->scene.mesh.num_triangles;
 
-	//normal = getNormal(vertA);
+	for(i=0;i<numTri;i++){
+		//get vertex index
+		indA = this->scene.mesh.triangles[i].vertices[0]; 
+		indB = this->scene.mesh.triangles[i].vertices[1]; 
+		indC = this->scene.mesh.triangles[i].vertices[2]; 
 
+		//get vertex
+		vertA = this->scene.mesh.vertices[indA];
+		vertB = this->scene.mesh.vertices[indB];
+		vertC = this->scene.mesh.vertices[indC];
+
+	normal = normalList[indA];
+	glNormal3f(normal.x, normal.z, normal.y);
 	glVertex3f( vertA.x, vertA.y, vertA.z );
+	
+	normal = normalList[indB];
+	glNormal3f(normal.x, normal.z, normal.y);
 	glVertex3f( vertB.x, vertB.y, vertB.z );
-	glVertex3f( vertC.x, vertC.y, vertC.z ); 
+	
+
+	normal = normalList[indC];
+	glNormal3f(normal.x, normal.z, normal.y);
+	glVertex3f( vertC.x, vertC.y, vertC.z );
+//glVertex3f( vertB.x, vertB.y, vertB.z );
+	//glVertex3f( vertC.x, vertC.y, vertC.z ); 
 
 //	std::cout << "VECTOR: (" << myVector.x << "," << myVector.y << "," << myVector.z << ")\n";
 }
+
+	
 glEnd(); 
 glFlush();
 }
@@ -286,9 +306,7 @@ void OpenglProject::render( const Camera* camera )
 
 
 
-	glMatrixMode( GL_PROJECTION ); // set current matrix 
-	glLoadIdentity(); // Clears the matrix 
-	gluPerspective(60,1,2,30);
+
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
 	vPos = (*camera).get_position();
@@ -297,8 +315,29 @@ void OpenglProject::render( const Camera* camera )
 	vUp = (*camera).get_up();
 	gluLookAt(vPos.x, vPos.y, vPos.z, vCen.x, vCen.y, vCen.z, vUp.x, vUp.y,  vUp.z);
 
-    
+	glPushMatrix();
+	Vector3 meshTrans = this->scene.mesh_position.position;
+	glTranslatef(meshTrans.x, meshTrans.y, meshTrans.z);
+	Quaternion meshRot = this->scene.mesh_position.orientation;
+	glRotatef(meshRot.w / (2 * PI) * 360.0, meshRot.x, meshRot.y, meshRot.z);
+	Vector3 meshSc = this->scene.mesh_position.scale;
+    	glScalef(meshSc.x, meshSc.y, meshSc.z);
 	myDraw();
+	glPopMatrix();
+
+	glPushMatrix();	
+	Vector3 heightTrans = this->scene.heightmap_position.position;
+	glTranslatef(heightTrans.x, heightTrans.y, heightTrans.z);
+	Quaternion heightRot = this->scene.heightmap_position.orientation;
+	glRotatef(heightRot.w / (2 * PI) * 360.0, heightRot.x, heightRot.y, heightRot.z);
+	Vector3 heightSc = this->scene.heightmap_position.scale;
+    	glScalef(heightSc.x, heightSc.y, heightSc.z);
+	myWaterDraw();
+	glPopMatrix();
+
+	glMatrixMode( GL_PROJECTION ); // set current matrix 
+	glLoadIdentity(); // Clears the matrix 
+	gluPerspective(60,1,2,30);
 
 	
 
