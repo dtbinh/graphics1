@@ -271,16 +271,16 @@ int numTri = this->scene.mesh.num_triangles;
 		vertC = this->scene.mesh.vertices[indC];
 
 	normal = normalList[indA];
-	glNormal3f(normal.x, normal.z, normal.y);
+	glNormal3f(normal.x, normal.y, normal.z);
 	glVertex3f( vertA.x, vertA.y, vertA.z );
 	
 	normal = normalList[indB];
-	glNormal3f(normal.x, normal.z, normal.y);
+	glNormal3f(normal.x, normal.y, normal.z);
 	glVertex3f( vertB.x, vertB.y, vertB.z );
 	
 
 	normal = normalList[indC];
-	glNormal3f(normal.x, normal.z, normal.y);
+	glNormal3f(normal.x, normal.y, normal.z);
 	glVertex3f( vertC.x, vertC.y, vertC.z );
 //glVertex3f( vertB.x, vertB.y, vertB.z );
 	//glVertex3f( vertC.x, vertC.y, vertC.z ); 

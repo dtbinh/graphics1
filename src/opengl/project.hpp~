@@ -130,7 +130,6 @@ public:
     void render( const Camera* camera );
 
 	void myDraw();
-	void myWaterDraw();
 
 	void updateNormalList( Vector3 vertex, NormalList* hash, Vector3 normal);
 
@@ -141,6 +140,7 @@ private:
     // a copy of the scene data, as passed in by initialize
     Scene scene;
 	int list;
+	NormalList nList[GOOD_PRIME];
 	Vector3* normalList;
 	float* zWater;
 
